@@ -6,21 +6,21 @@ var connection=require('../config');
 router.post('/',function(req,res,next){
 
     var owner=req.body.owner
-    var memebers=req.body.memebers
-      
+     var nom=req.body.nom
+     var desc=req.body.description 
 
-    connection.query('insert into groupe (owner) values(?)',[owner],
+    connection.query('insert into groupe (owner,name,description) values(?,?,?)',[owner,nom,desc],
     (err,result)=>{
       if(err)
-      { 
+      { console.log(err)
           
         res.send({"success":false,"message":"probleme de connection"})
     
     }
       else
         {var groupeId=result.insertId
-            addMemberGroupe(groupeId)
-            res.send({"success":true,"message":"groupe ajouter avec succes"})
+            
+            res.send({"success":true,"message":"groupe ajouter avec succes","groupeId":groupeId})
         }
     
         }
@@ -33,19 +33,16 @@ router.post('/',function(req,res,next){
 
 
 
-addMemberGroupe=(groupeId)=>
+
+})
+router.post('/addMemberGroupe',(req,res)=>
     {
-        for(var memeber in memebers)
-        {  
-            var email=memebers[memeber].email
-            var nom=memebers[memeber].nom
+            var groupeId= req.body.groupeId
+            var email=req.body.email
+            var nom=req.body.nom
             
-            if(verifUser(email)!==true)
-                {
-                    
-                    addUser(email,nom)
-                
-                }
+            verifUser(email,nom)
+               
             
             connection.query('insert into groupe_mumber (id_groupe,momber_email) values(?,?)',[groupeId,email],
             
@@ -53,9 +50,14 @@ addMemberGroupe=(groupeId)=>
                 if(err)
                    {
                        
-                    
-                    res.send({"success":false,"message":"probleme de connection2"})
-                    }      
+                    if(err.errno==1062)
+                    res.send({"success":false,"message":"le membre existe "})
+                    else
+                    {   console.log(err)
+                        res.send({"success":false,"message":"probleme de connection2"})}
+                    } 
+                    else
+                    res.send({"success":true,"message":"member ajouter avec success"})     
             
     
     
@@ -68,53 +70,54 @@ addMemberGroupe=(groupeId)=>
             )
 
           
-        }
+        
 
-    }
-
-
-    verifUser=(email)=>{
-        connection.query('select * from utilisateur where email=?',[email],(err,row,next)=>{
-
-          if(row.length===0)
-            {
-                return true;
-            }
-            else
-          return false;
-            
-
-
-
-
-
-        })
-
-
-
-    }
-
-
+    })
     addUser=(email,nom)=>{
-        connection.query('insert into utilisateur (email,nom) values(?,?)',[email,nom],(err,result)=>{
-
-            if(err)
-                console.log(err)
-
-
-
-        })
-
+       
 
 
     }
 
+
+
+    
+
+    
 
   
    // 
 
-   
-})
+   verifUser=(email,nom)=>{
+    connection.query('select * from utilisateur where email=?',[email],(err,row,next)=>{
+
+      if(row.length===0)
+        {
+            connection.query('insert into utilisateur (email,nom) values(?,?)',[email,nom],(err,result)=>{
+
+                if(err)
+                    console.log(err)
+    
+    
+    
+            })
+            return true
+    
+        }
+        else
+      return false;
+        
+
+
+
+
+
+    })
+
+
+
+}
+
 
 router.post('/getList',function(req,res){
 
@@ -161,6 +164,25 @@ connection.query('SELECT * FROM utilisateur WHERE email in(select momber_email f
 }
 
 )
+
+
+
+})
+
+router.post('/deleteMemeber',(req,res)=>{
+
+    var groupId=req.body.groupeId
+    var email=req.body.email
+
+    connection.query('update groupe_mumber set etat=0 where id_groupe=? and momber_email=?',[groupId,email],
+        (err,row)=>{
+            if(err!=null)
+            {console.log(err)
+                res.send({"success":false,"message":"probleme de connection "})}
+            else
+            res.send({"success":true,"message":"memebre supprimer avec success "})
+        }
+    )
 
 
 
