@@ -41,43 +41,66 @@ router.post('/addMemberGroupe',(req,res)=>
             var email=req.body.email
             var nom=req.body.nom
             
-            verifUser(email,nom)
+            connection.query('select * from utilisateur where email=?',[email],(err,row,next)=>{
+                
+                if(row.length===0)
+                  {
+                      connection.query('insert into utilisateur (email,nom) values(?,?)',[email,nom],(err,result)=>{
+                        console.log("hello")
+                          if(err)
+                              console.log(err)
+                      
+                     
+              
+                          
+                      })
+              
+                  }
+                  {connection.query('insert into groupe_mumber (id_groupe,momber_email) values(?,?)',[groupeId,email],
+                      
+                  (err,result)=>{
+                      if(err)
+                         {
+                             
+                          if(err.errno==1062)
+                          {res.send({"success":false,"message":"le membre existe "})
+                        console.log("xx")
+                        }
+                          else
+                          {   console.log(err)
+                              res.send({"success":false,"message":"probleme de connection2"})}
+                          } 
+                          else
+                          res.send({"success":true,"message":"member ajouter avec success"})     
+                  
+          
+          
+                  }
+                  
+                  
+                  
+                  
+                  
+                  )
+      
+                
+              }
+                  
+                  
+          
+          
+          
+          
+          
+              })
+          
+          
                
             
-            connection.query('insert into groupe_mumber (id_groupe,momber_email) values(?,?)',[groupeId,email],
             
-            (err,result)=>{
-                if(err)
-                   {
-                       
-                    if(err.errno==1062)
-                    res.send({"success":false,"message":"le membre existe "})
-                    else
-                    {   console.log(err)
-                        res.send({"success":false,"message":"probleme de connection2"})}
-                    } 
-                    else
-                    res.send({"success":true,"message":"member ajouter avec success"})     
-            
-    
-    
-            }
-            
-            
-            
-            
-            
-            )
-
-          
-        
 
     })
-    addUser=(email,nom)=>{
-       
-
-
-    }
+   
 
 
 
@@ -86,44 +109,14 @@ router.post('/addMemberGroupe',(req,res)=>
     
 
   
-   // 
 
-   verifUser=(email,nom)=>{
-    connection.query('select * from utilisateur where email=?',[email],(err,row,next)=>{
-
-      if(row.length===0)
-        {
-            connection.query('insert into utilisateur (email,nom) values(?,?)',[email,nom],(err,result)=>{
-
-                if(err)
-                    console.log(err)
-    
-    
-    
-            })
-            return true
-    
-        }
-        else
-      return false;
-        
-
-
-
-
-
-    })
-
-
-
-}
 
 
 router.post('/getList',function(req,res){
 
     var owner=req.body.owner;
  
-    connection.query('select * from groupe where owner=?',[owner],(error,row)=>
+    connection.query('select * from groupe where owner=? and etat=1',[owner],(error,row)=>
     {
      /* if(error!=null)
         res.send({success:false,message:"erreur de connection"})
@@ -148,10 +141,10 @@ router.post('/getList',function(req,res){
 router.post('/getGroupeMemebers',function(req,res){
 
 const groupeId=req.body.groupeId
-
+console.log(groupeId)
 connection.query('SELECT * FROM utilisateur WHERE email in(select momber_email from groupe_mumber where `id_groupe`= ?)',[groupeId],
 (errur,row)=>{
-
+console.log(row)
     if(errur)
     res.send({"success":false,"message":"probleme de connection"})
     else
@@ -187,4 +180,66 @@ router.post('/deleteMemeber',(req,res)=>{
 
 
 })
+
+router.post('/getAutreGroupe',(req,res)=>{
+
+    var email=req.body.email
+console.log(email)
+        connection.query('select * from groupe where id in( select id_groupe from groupe_mumber where etat= 1 and momber_email =?)',[email],
+            (erreur,rows)=>{
+                console.log("erreur"+erreur)
+                if(erreur!=null)
+                    res.send({"success":false,"message":"erreur de connection"})
+                else
+                    res.send({"success":true,"data":rows})
+
+
+            }
+        
+        )
+
+
+
+})
+
+router.post('/mesGroupes',(req,res)=>{
+
+    var email=req.body.email
+console.log(email)
+        connection.query('select * from groupe where etat=1 and owner=?',[email],
+            (erreur,rows)=>{
+                console.log("erreur"+erreur)
+                if(erreur!=null)
+                    res.send({"success":false,"message":"erreur de connection"})
+                else
+                    res.send({"success":true,"data":rows})
+
+
+            }
+        
+        )
+
+
+
+})
+router.post('/delete',(req,res)=>{
+
+    var id=req.body.id;
+console.log(id)
+connection.query('update  groupe set etat=0 where id=?',[id],
+            (erreur,rows)=>{
+                console.log("erreur"+erreur)
+                if(erreur!=null)
+                    res.send({"success":false,"message":"erreur de connection"})
+                else
+                    res.send({"success":true,"message ":"type supprimer avec success"})
+
+
+            }
+        
+        )
+
+})
+
+
 module.exports=router
